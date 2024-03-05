@@ -1,5 +1,5 @@
 docker build -t go_sample .
-docker run -e MONGODB_CONNECTION_STRING="mongodb+srv://mongoadmin:gxUxfVPaTw2CPmrO@cluster1.ufghn.mongodb.net/" -p 8080:8080 go_sample
+docker run -e MONGODB_CONNECTION_STRING="XXXXX" -p 8080:8080 go_sample
 
 
 docker tag go_sample mhelmstetter/go_sample
