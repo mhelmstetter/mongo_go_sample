@@ -76,6 +76,8 @@ func upsertDocument(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+
+	fmt.Fprintf(w, "Created _id: %s\n", doc.Key)
 }
 
 func findDocuments(w http.ResponseWriter, r *http.Request) {
