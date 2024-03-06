@@ -48,6 +48,7 @@ func init() {
 
 func main() {
 	r := mux.NewRouter()
+	r.HandleFunc("/", healthCheck).Methods("GET")
 	r.HandleFunc("/upsert", upsertDocument).Methods("GET")
 	r.HandleFunc("/find", findDocuments).Methods("GET")
 
@@ -76,6 +77,8 @@ func upsertDocument(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+
+	fmt.Fprintf(w, "Created _id: %s\n", doc.Key)
 }
 
 func findDocuments(w http.ResponseWriter, r *http.Request) {
@@ -106,4 +109,8 @@ func findDocuments(w http.ResponseWriter, r *http.Request) {
 
 	// Return count
 	fmt.Fprintf(w, "Number of documents found: %d\n", count)
+}
+
+func healthCheck(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "All good here at %s\n", time.Now().String())
 }
