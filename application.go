@@ -37,6 +37,7 @@ type Document struct {
 type Config struct {
 	UpsertContextTimeout  time.Duration `bson:"upsertContextTimeout"`
 	FindContextTimeout    time.Duration `bson:"findContextTimeout"`
+	AggContextTimeout     time.Duration `bson:"aggContextTimeout"`
 	DefaultContextTimeout time.Duration `bson:"defaultContextTimeout"`
 	UpdateInterval        time.Duration `bson:"-"`
 }
@@ -135,6 +136,7 @@ func initConfig(ctx context.Context) {
 		defaultConfig := Config{
 			UpsertContextTimeout:  500,
 			FindContextTimeout:    500,
+			AggContextTimeout:     500,
 			DefaultContextTimeout: 500,
 			UpdateInterval:        updateInterval,
 		}
@@ -198,7 +200,7 @@ func findDocuments(w http.ResponseWriter, r *http.Request) {
 }
 
 func aggSampleGroup(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), config.FindContextTimeout*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), config.AggContextTimeout*time.Millisecond)
 	defer cancel()
 
 	pipeline := bson.A{
