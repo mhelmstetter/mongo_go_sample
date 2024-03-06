@@ -52,15 +52,14 @@ func main() {
 	r.HandleFunc("/find", findDocuments).Methods("GET")
 
 	// Start server
-	fmt.Println("Server listening on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	fmt.Println("Server listening on port 5000")
+	log.Fatal(http.ListenAndServe(":5000", r))
 }
 
 func upsertDocument(w http.ResponseWriter, r *http.Request) {
 	var doc Document
 	doc.ID = uuid.New().String()
 	doc.Key = uuid.New().String()
-	doc.Value = "example value"
 	doc.X = rand.Intn(500000) + 1
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
