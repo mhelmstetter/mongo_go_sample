@@ -1,5 +1,6 @@
 Elastic Beanstalk -- to create the application archive for upload
 --------------------
+cd mongo_go_sample
 zip ../gosample.zip -r *
 
 
