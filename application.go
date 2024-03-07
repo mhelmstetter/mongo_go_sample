@@ -25,6 +25,7 @@ var (
 	config         Config
 	configMutex    sync.Mutex
 	updateInterval time.Duration = 60 * time.Second // Default update interval
+	numRetries     int           = 2
 )
 
 type Document struct {
@@ -160,9 +161,16 @@ func upsertDocument(w http.ResponseWriter, r *http.Request) {
 	opts := options.Update().SetUpsert(true)
 	update := bson.M{"$set": doc}
 
-	_, err := collection.UpdateOne(ctx, filter, update, opts)
+	var err error
+	for i := 1; i <= numRetries; i++ {
+		_, err = collection.UpdateOne(ctx, filter, update, opts)
+		if err == nil {
+			break
+		}
+		log.Printf("upsert error: %+v, attempt %v", err, i)
+	}
+
 	if err != nil {
-		log.Printf("upsert error: %+v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -180,9 +188,17 @@ func findDocuments(w http.ResponseWriter, r *http.Request) {
 	filter := bson.M{"x": randomX}
 	opts := options.Find().SetProjection(bson.M{"_id": 1})
 
-	cursor, err := collection.Find(ctx, filter, opts)
+	var err error
+	var cursor *mongo.Cursor
+	for i := 1; i <= numRetries; i++ {
+		cursor, err = collection.Find(ctx, filter, opts)
+		if err == nil {
+			break
+		}
+		log.Printf("find error: %+v, attempt %v", err, i)
+	}
+
 	if err != nil {
-		log.Printf("find error: %+v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -219,9 +235,17 @@ func aggSampleGroup(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	cursor, err := collection.Aggregate(ctx, pipeline)
+	var err error
+	var cursor *mongo.Cursor
+	for i := 1; i <= numRetries; i++ {
+		cursor, err = collection.Aggregate(ctx, pipeline)
+		if err == nil {
+			break
+		}
+		log.Printf("agg error: %+v, attempt %v", err, i)
+	}
+
 	if err != nil {
-		log.Printf("agg error: %+v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
