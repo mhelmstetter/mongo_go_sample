@@ -37,6 +37,7 @@ type Document struct {
 type Config struct {
 	UpsertContextTimeout  time.Duration `bson:"upsertContextTimeout"`
 	FindContextTimeout    time.Duration `bson:"findContextTimeout"`
+	AggContextTimeout     time.Duration `bson:"aggContextTimeout"`
 	DefaultContextTimeout time.Duration `bson:"defaultContextTimeout"`
 	UpdateInterval        time.Duration `bson:"-"`
 }
@@ -118,6 +119,7 @@ func main() {
 	r.HandleFunc("/", healthCheck).Methods("GET")
 	r.HandleFunc("/upsert", upsertDocument).Methods("GET")
 	r.HandleFunc("/find", findDocuments).Methods("GET")
+	r.HandleFunc("/agg", aggSampleGroup).Methods("GET")
 
 	// Start server
 	fmt.Println("Server listening on port 5000")
@@ -134,6 +136,7 @@ func initConfig(ctx context.Context) {
 		defaultConfig := Config{
 			UpsertContextTimeout:  500,
 			FindContextTimeout:    500,
+			AggContextTimeout:     500,
 			DefaultContextTimeout: 500,
 			UpdateInterval:        updateInterval,
 		}
@@ -194,6 +197,45 @@ func findDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Number of documents found: %d\n", count)
+}
+
+func aggSampleGroup(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), config.AggContextTimeout*time.Millisecond)
+	defer cancel()
+
+	pipeline := bson.A{
+		bson.D{{"$sample", bson.D{{"size", 100000}}}},
+		bson.D{
+			{"$group",
+				bson.D{
+					{"_id", 1},
+					{"minid", bson.D{{"$min", "$_id"}}},
+					{"maxid", bson.D{{"$max", "$_id"}}},
+					{"minkey", bson.D{{"$min", "$key"}}},
+					{"maxkey", bson.D{{"$max", "$key"}}},
+					{"xavg", bson.D{{"$avg", "$x"}}},
+				},
+			},
+		},
+	}
+
+	cursor, err := collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		log.Printf("agg error: %+v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var count int
+	for cursor.Next(ctx) {
+		count++
+		if count >= 1000 {
+			break
+		}
+	}
+
+	fmt.Fprintf(w, "Aggregation returned: %d\n", count)
 }
 
 func healthCheck(w http.ResponseWriter, r *http.Request) {
