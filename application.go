@@ -2,22 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net/http"
-	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
-	client         *mongo.Client
-	collection     *mongo.Collection
-	configColl     *mongo.Collection
-	config         Config
-	configMutex    sync.Mutex
 	updateInterval time.Duration = 60 * time.Second // Default update interval
 	numRetries     int           = 2
 )
@@ -39,7 +30,7 @@ type Config struct {
 
 func init() {
 
-	envName, _ := GetEnvironmentName("/var/lib/cfn-init/data/metadata.json")
+	//envName, _ := GetEnvironmentName("/var/lib/cfn-init/data/metadata.json")
 
 }
 
@@ -62,10 +53,6 @@ func initConfig(ctx context.Context) {
 			log.Fatal(err)
 		}
 	}
-}
-
-func healthCheck(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "All good here at %s\n", time.Now().String())
 }
 
 func refreshConfig() {

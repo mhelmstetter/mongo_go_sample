@@ -8,9 +8,15 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+func healthCheck(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "All good here at %s\n", time.Now().String())
+}
 
 func upsertDocument(w http.ResponseWriter, r *http.Request) {
 	var doc Document
@@ -106,4 +112,22 @@ func aggSampleGroup(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			break
 		}
-		log.Printf("agg error: %+v, attempt %v", err, i
+		log.Printf("agg error: %+v, attempt %v", err, i)
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var count int
+	for cursor.Next(ctx) {
+		count++
+		if count >= 1000 {
+			break
+		}
+	}
+
+	fmt.Fprintf(w, "Aggregation returned: %d\n", count)
+}

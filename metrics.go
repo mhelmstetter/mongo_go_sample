@@ -1,17 +1,12 @@
 package main
 
 import (
-	"context"
-	"log"
-
 	"go.mongodb.org/mongo-driver/event"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func trackConnectionEvents(e *event.PoolEvent) {
 	// Track connection events
-	incrementEventCount(e.Type.String())
+	incrementEventCount(e.Type)
 }
 
 func trackMongoDBErrors(err error) {
@@ -30,21 +25,12 @@ func trackMongoDBErrors(err error) {
 }
 
 func init() {
-	// Setup event listeners for connection events
-	poolMonitor := &event.PoolMonitor{
-		Event: trackConnectionEvents,
-	}
-	clientOptions := options.Client().SetPoolMonitor(poolMonitor)
-	client, err := mongo.Connect(context.Background(), clientOptions)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	// Initialize eventCounts map
 	eventCounts = make(map[string]int)
 
-	// Setup event listeners for MongoDB errors
-	client.Error = func(_ *mongo.Client, err error) {
-		trackMongoDBErrors(err)
-	}
+	// // Setup event listeners for MongoDB errors
+	// client.Error = func(_ *mongo.Client, err error) {
+	// 	trackMongoDBErrors(err)
+	// }
 }
