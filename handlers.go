@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -13,6 +14,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+type AggregationResult struct {
+	MinID  string  `json:"minid"`
+	MaxID  string  `json:"maxid"`
+	MinKey string  `json:"minkey"`
+	MaxKey string  `json:"maxkey"`
+	XAvg   float64 `json:"xavg"`
+}
 
 func upsertDocument(w http.ResponseWriter, r *http.Request) {
 	var doc Document
@@ -89,8 +98,17 @@ func aggSampleGroup(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.AggContextTimeout*time.Millisecond)
 	defer cancel()
 
+	// Configure the number of random values to generate
+	numRandomValues := config.AggInQuerySize
+
+	// Generate random X values
+	randomXValues := make([]int, numRandomValues)
+	for i := 0; i < numRandomValues; i++ {
+		randomXValues[i] = rand.Intn(500000) + 1
+	}
+
 	pipeline := bson.A{
-		bson.D{{"$sample", bson.D{{"size", 100000}}}},
+		bson.D{{"$match", bson.D{{"x", bson.D{{"$in", randomXValues}}}}}},
 		bson.D{
 			{"$group",
 				bson.D{
@@ -105,32 +123,30 @@ func aggSampleGroup(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	var err error
-	var cursor *mongo.Cursor
-	for i := 1; i <= numRetries; i++ {
-		cursor, err = collection.Aggregate(ctx, pipeline)
-		if err == nil {
-			break
-		}
-		trackMongoDBErrors(err)
-		log.Printf("agg error: %+v, attempt %v", err, i)
-	}
-
+	cursor, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer cursor.Close(ctx)
 
-	var count int
-	for cursor.Next(ctx) {
-		count++
-		if count >= 1000 {
-			break
+	var result AggregationResult
+	if cursor.Next(ctx) {
+		if err := cursor.Decode(&result); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	}
 
-	fmt.Fprintf(w, "Aggregation returned: %d\n", count)
+	responseJSON, err := json.Marshal(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(responseJSON)
 }
 
 func healthCheck(w http.ResponseWriter, r *http.Request) {

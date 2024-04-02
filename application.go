@@ -28,8 +28,13 @@ type Config struct {
 	UpsertContextTimeout  time.Duration `bson:"upsertContextTimeout"`
 	FindContextTimeout    time.Duration `bson:"findContextTimeout"`
 	AggContextTimeout     time.Duration `bson:"aggContextTimeout"`
+	AggInQuerySize        int           `bson:"aggInQuerySize"`
 	DefaultContextTimeout time.Duration `bson:"defaultContextTimeout"`
 	UpdateInterval        time.Duration `bson:"-"`
+	FindMaxTimeMS         int           `bson:"findMaxTimeMs"`
+	FindTimeoutMS         int           `bson:"findTimeoutMs"`
+	AggMaxTimeMS          int           `bson:"aggMaxTimeMs"`
+	AggTimeoutMS          int           `bson:"aggTimeoutMs"`
 }
 
 func init() {

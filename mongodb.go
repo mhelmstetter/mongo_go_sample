@@ -95,8 +95,13 @@ func initConfig(ctx context.Context) {
 			UpsertContextTimeout:  500,
 			FindContextTimeout:    500,
 			AggContextTimeout:     500,
+			AggInQuerySize:        100,
 			DefaultContextTimeout: 500,
 			UpdateInterval:        updateInterval,
+			FindMaxTimeMS:         -1,
+			FindTimeoutMS:         -1,
+			AggMaxTimeMS:          -1,
+			AggTimeoutMS:          -1,
 		}
 		_, err := configColl.InsertOne(ctx, defaultConfig)
 		if err != nil {
